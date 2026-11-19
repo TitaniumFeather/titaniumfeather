@@ -8,6 +8,8 @@ from pathlib import Path
 R=Path(__file__).resolve().parents[1]
 C=json.loads((R/'config.json').read_text(encoding='utf-8'))
 OUT=R/'cards'; OUT.mkdir(exist_ok=True)
+THEME='dark'
+DARK_PALETTE={'#F1EEE5':'#1F2328','#D7B54A':'#8A6515','#19A9D1':'#087F9F','#A3A39A':'#57606A','#293034':'#D0D7DE'}
 STATIC=os.environ.get('STATIC')=='1'
 BG='#080A0B'; PANEL='#101415'; IVORY='#F1EEE5'; GOLD='#D7B54A'; CYAN='#19A9D1'; MUTED='#A3A39A'; LINE='#293034'
 def e(s): return html.escape(str(s),quote=True)
@@ -19,6 +21,17 @@ def r(x,y,w,h,fill=PANEL,stroke='none',rx=0,extra=''):
 def path(d,color=CYAN,width=1,extra=''):
     return f'<path d="{d}" fill="none" stroke="{color}" stroke-width="{width}" {extra}/>'
 def svg(name,w,h,body):
+    # True alpha, not a background-colored rectangle: GitHub's own canvas
+    # shows through even with nonstandard themes.
+    import re
+    body=re.sub(r'<rect x="0" y="0" width="'+str(w)+r'" height="'+str(h)+r'"[^>]*/>', '', body, count=1)
+    # Remove the outer card panel and dark solid fills from illustrations.
+    body=re.sub(r'<rect x="16" y="8" width="'+str(w-32)+r'" height="'+str(h-16)+r'"[^>]*/>', '', body)
+    body=re.sub(r'fill="(?:#080A0B|#101415|#0B1519|#15242B|#10232B|#11191B|#18323B|#0C171B|#111C20|#16272C|#17282C|#12252C|#172F37|#1D4149|#203C45|#19313A|#1B3440)"', 'fill="none"', body, flags=re.I)
+    if THEME=='light':
+        for old,new in DARK_PALETTE.items():
+            body=re.sub(re.escape(old),new,body,flags=re.I)
+    target=OUT/THEME; target.mkdir(parents=True,exist_ok=True)
     font_css=''.join(f"@font-face{{font-family:'Titanium Narrow';src:url(data:font/woff;base64,{base64.b64encode((R/'fonts'/f'narrow-{style}.woff').read_bytes()).decode()}) format('woff');font-weight:{weight};}}" for style,weight in [('regular',400),('bold',700)])
     css='<style>'+font_css+"""
     .portrait-appear{animation:portrait-enter 1.6s ease-out both}.ascii-pixel{opacity:0;animation:pixel-in .45s steps(2,end) both}
@@ -65,7 +78,7 @@ def svg(name,w,h,body):
     @keyframes name-glide{0%,100%{opacity:1}50%{opacity:.85}}
     @media(prefers-reduced-motion:reduce){*{animation:none!important;stroke-dashoffset:0!important;opacity:1!important}}
     """+(' *{animation:none!important;stroke-dashoffset:0!important;opacity:1!important}' if STATIC else '')+'</style>'
-    (OUT/name).write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img" aria-label="{e(name)}">{css}{body}</svg>',encoding='utf-8')
+    (target/name).write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img" aria-label="{e(name)}">{css}{body}</svg>',encoding='utf-8')
 def grid(w,h,step=42):
     return ''.join(path(f'M{x} 0 V{h}',LINE,.55, 'opacity=".28"') for x in range(0,w,step))+''.join(path(f'M0 {y} H{w}',LINE,.55,'opacity=".28"') for y in range(0,h,step))
 def header(w,label,num):
@@ -236,7 +249,8 @@ def footer():
     b+=t(40,180,'LET’S BUILD IT.',17,GOLD,600,3,'mono')
     b+=t(1160,182,'PORTFOLIO  /  GITHUB',14,CYAN,500,1,'mono','text-anchor="end"')
     svg('footer.svg',w,h,b)
-hero();statement();section()
-for i,p in enumerate(C['projects']):project(i,p)
-footer()
-print('Generated 8 SVGs in cards/')
+for THEME in ('dark','light'):
+    hero();statement();section()
+    for i,p in enumerate(C['projects']):project(i,p)
+    footer()
+print('Generated 16 theme-aware transparent SVGs in cards/dark and cards/light')
