@@ -3,6 +3,7 @@ Run: python scripts/render_cards.py ; STATIC=1 python scripts/render_cards.py
 Edit config.json for text, project URLs and identity. No GitHub API required.
 """
 import html, json, os
+from PIL import Image, ImageOps, ImageEnhance
 from pathlib import Path
 R=Path(__file__).resolve().parents[1]
 C=json.loads((R/'config.json').read_text(encoding='utf-8'))
@@ -19,6 +20,7 @@ def path(d,color=CYAN,width=1,extra=''):
     return f'<path d="{d}" fill="none" stroke="{color}" stroke-width="{width}" {extra}/>'
 def svg(name,w,h,body):
     css="""<style>
+    .ascii-row{opacity:0;animation:ascii-in .2s steps(2,end) both} @keyframes ascii-in{from{opacity:0}to{opacity:.94}}
     .reveal{animation:reveal .85s cubic-bezier(.2,.75,.2,1) both}.draw{stroke-dasharray:900;stroke-dashoffset:900;animation:draw 2.6s ease forwards}.glow{animation:glow 4s ease-in-out infinite}.scan{animation:scan 4s ease-in-out infinite}.float{animation:float 6s ease-in-out infinite}
     @keyframes reveal{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes draw{to{stroke-dashoffset:0}}@keyframes glow{50%{opacity:.3}}@keyframes scan{0%,100%{transform:translateY(0)}50%{transform:translateY(125px)}}@keyframes float{50%{transform:translateY(-7px)}}
     @media(prefers-reduced-motion:reduce){*{animation:none!important;stroke-dashoffset:0!important;opacity:1!important}}
@@ -28,21 +30,39 @@ def grid(w,h,step=42):
     return ''.join(path(f'M{x} 0 V{h}',LINE,.55, 'opacity=".28"') for x in range(0,w,step))+''.join(path(f'M0 {y} H{w}',LINE,.55,'opacity=".28"') for y in range(0,h,step))
 def header(w,label,num):
     return t(32,34,'MA  /  TITANIUMFEATHER',13,GOLD,700,2,'mono')+t(w-32,34,f'{label}   /   {num}',12,MUTED,500,1,'mono','text-anchor="end"')+path(f'M32 49 H{w-32}',LINE)
+def ascii_portrait():
+    """Create SVG-safe, character-based artwork from the supplied illustrated portrait."""
+    im=Image.open(R/'portrait-source.png').convert('RGB')
+    # Crop around the head, leaving enough neck to make the silhouette readable.
+    im=im.crop((180,55,1010,985))
+    cols,rows=65,48
+    gray=ImageOps.grayscale(im.resize((cols,rows),Image.Resampling.LANCZOS))
+    gray=ImageEnhance.Contrast(gray).enhance(1.75)
+    chars='@%#*+=-:. '
+    out=[]
+    for y in range(rows):
+        line=''.join(chars[min(len(chars)-1,int(gray.getpixel((x,y))*len(chars)/256))] for x in range(cols))
+        # Draw row-by-row: the print effect is legible and survives SVG-in-img.
+        delay=0.7+y*.028
+        color=GOLD if y%5==0 else IVORY
+        out.append(f'<text x="0" y="{(y+1)*8.0:.1f}" xml:space="preserve" font-family="DejaVu Sans Mono,monospace" font-size="8.8" letter-spacing="0" fill="{color}" opacity=".94" class="ascii-row" style="animation-delay:{delay:.3f}s">{e(line)}</text>')
+    return ''.join(out)
+
 def hero():
-    w,h=1200,455
+    w,h=1200,490
     b=r(0,0,w,h,BG)+grid(w,h,58)+header(w,'PORTFOLIO 2026','00')
-    b+=t(40,100,'SOFTWARE ENGINEER  ·  CREATIVE BUILDER',15,GOLD,500,3,'mono')
+    b+=t(40,104,'SOFTWARE ENGINEER  /  CREATIVE BUILDER',14,GOLD,500,2,'mono')
     name=C['name'].upper().split()
-    b+='<g class="reveal" style="animation-delay:.12s">'+t(32,225,name[0],137,IVORY,900,-6)+'</g>'
-    b+='<g class="reveal" style="animation-delay:.28s">'+t(32,355,' '.join(name[1:]),149,IVORY,900,-7)+'</g>'
-    b+=t(40,410,'BUILDING WITH PRECISION. PROGRAMMING WITH PURPOSE.',16,MUTED,400,2,'mono')
-    # abstract architectural wireframe, right side
-    b+=path('M880 96 L1010 68 L1143 126 L1013 158 Z',CYAN,1.4,'class="draw" opacity=".8"')
-    b+=path('M880 96 V300 L1013 366 V158 M1013 366 L1143 306 V126 M880 300 L1010 273 L1143 306',CYAN,1.4,'class="draw" opacity=".65"')
-    b+=path('M925 127 L1058 98 V307 L925 333 Z',GOLD,1.4,'class="draw" opacity=".7"')
-    b+=path('M1058 98 L1098 115 V323 L1058 307 M925 333 L965 349 L1098 323',GOLD,1.1,'class="draw" opacity=".55"')
-    for x,y in [(876,95),(1013,158),(1143,126),(1013,366),(925,333)]:b+=f'<circle cx="{x}" cy="{y}" r="3" fill="{GOLD}"/>'
-    b+=t(893,393,'FIG. 01  /  STRUCTURE IN MOTION',10,CYAN,400,1,'mono')
+    b+='<g class="reveal" style="animation-delay:.12s">'+t(32,236,name[0],124,IVORY,900,-5)+'</g>'
+    b+='<g class="reveal" style="animation-delay:.30s">'+t(32,362,' '.join(name[1:]),145,IVORY,900,-7)+'</g>'
+    b+=t(40,431,'BUILDING WITH PRECISION.',17,MUTED,400,2,'mono')
+    b+=t(40,459,'PROGRAMMING WITH PURPOSE.',17,MUTED,400,2,'mono')
+    # The actual ASCII portrait is baked into the SVG as text, not a raster image.
+    b+=f'<rect x="751" y="66" width="416" height="401" rx="10" fill="{BG}"/>'
+    b+=f'<g transform="translate(759 74)">{ascii_portrait()}</g>'
+    b+=path('M740 64 H772 M740 64 V94 M1170 64 H1138 M1170 64 V94 M740 468 H772 M740 468 V438 M1170 468 H1138 M1170 468 V438',CYAN,1.3,'opacity=".8"')
+    b+=path('M753 78 H1160',GOLD,.7,'opacity=".4"')
+    b+=t(767,453,'FIG. 01 / HUMAN, NOT MACHINE',11,CYAN,500,1,'mono')
     svg('hero.svg',w,h,b)
 def statement():
     w,h=1200,270
