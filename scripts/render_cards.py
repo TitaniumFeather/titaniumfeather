@@ -132,11 +132,11 @@ def hero():
     b+='<defs><linearGradient id="goldSweep" x1="0" x2="1"><stop offset="0" stop-color="#F1EEE5"/><stop offset=".48" stop-color="#F1EEE5"/><stop offset=".52" stop-color="#D7B54A"/><stop offset=".57" stop-color="#F1EEE5"/><stop offset="1" stop-color="#F1EEE5"/><animate attributeName="x1" values="-1;1.5" dur="6s" repeatCount="indefinite"/><animate attributeName="x2" values="0;2.5" dur="6s" repeatCount="indefinite"/></linearGradient><clipPath id="nameClip"><rect x="30" y="110" width="720" height="270"/></clipPath></defs>'
     b+=f'<g opacity=".33">{cube(770,205,104,CYAN,0)}{cube(1045,124,48,GOLD,1.2)}{cube(1115,365,60,CYAN,2.3)}{cube(690,382,45,GOLD,1.7)}</g>'
     b+=path('M710 360 Q865 60 1130 140 M730 440 Q900 505 1175 280',CYAN,1,'class="trace" opacity=".25"')
-    b+=t(40,108,'SOFTWARE ENGINEER  /  CREATIVE BUILDER',14,GOLD,500,2,'mono')
-    b+='<g clip-path="url(#nameClip)"><g class="hero-name" style="animation-delay:.12s">'+t(32,247,'MUHAMMED',116,'url(#goldSweep)',900,-5)+'</g>'
-    b+='<g class="hero-name" style="animation-delay:.4s">'+t(32,368,'ADIL.',150,IVORY,900,-7)+'</g></g>'
-    b+=t(40,449,'BUILDING WITH PRECISION.',18,MUTED,400,2,'mono')
-    b+=t(40,478,'PROGRAMMING WITH PURPOSE.',18,MUTED,400,2,'mono')
+    b+=t(40,103,'SOFTWARE ENGINEER  /  CREATIVE BUILDER',17,GOLD,500,2,'mono')
+    b+='<g clip-path="url(#nameClip)"><g class="hero-name" style="animation-delay:.12s">'+t(32,252,'MUHAMMED',132,'url(#goldSweep)',900,-5)+'</g>'
+    b+='<g class="hero-name" style="animation-delay:.4s">'+t(32,383,'ADIL.',166,IVORY,900,-7)+'</g></g>'
+    b+=t(40,453,'BUILDING WITH PRECISION.',20,MUTED,400,2,'mono')
+    b+=t(40,488,'PROGRAMMING WITH PURPOSE.',20,MUTED,400,2,'mono')
     # Portrait is floating transparent ASCII, not a rectangular block.
     b+=f'<g transform="translate(790 73)">{ascii_portrait()}</g>'
     b+='<g class="glint" opacity=".2">'+path('M60 71 V400',CYAN,1)+'</g>'
@@ -145,26 +145,26 @@ def hero():
     b+='<circle cx="1144" cy="87" r="3" fill="'+GOLD+'" class="pulse"/>'
     svg('hero.svg',w,h,b)
 def statement():
-    w,h=1200,365
+    w,h=1200,390
     b=r(0,0,w,h,BG)+header(w,'THE HUMAN ELEMENT','01')
-    b+=t(40,120,'A little bit of',65,IVORY,800,-2)
-    b+=t(40,201,'everything.',85,GOLD,800,-3)
-    b+=t(43,273,'ALWAYS CURIOUS. ALWAYS BUILDING.',15,CYAN,600,1.5,'mono')
-    b+=path('M645 83 V320',LINE,1)
-    b+=t(680,111,"I'm Muhammed, a Computer Science student",21,IVORY)
-    b+=t(680,143,'at the University of Toronto.',21,IVORY)
-    b+=t(680,193,'Some days I build operating systems.',20,MUTED)
-    b+=t(680,225,'Other days I experiment with AI,',20,MUTED)
-    b+=t(680,257,'design interfaces, or take things apart',20,MUTED)
-    b+=t(680,289,'just to understand how they work.',20,MUTED)
-    b+=t(680,332,'SYSTEMS   /   INTELLIGENCE   /   DESIGN',12,GOLD,500,1.4,'mono')
+    b+=t(40,140,'A little bit of',72,IVORY,800,-2)
+    b+=t(40,230,'everything.',93,GOLD,800,-3)
+    b+=t(43,308,'ALWAYS CURIOUS. ALWAYS BUILDING.',17,CYAN,600,1.5,'mono')
+    b+=path('M625 90 V343',LINE,1)
+    b+=t(658,117,"I'm Muhammed, a Computer Science",25,IVORY)
+    b+=t(658,154,'student at the University of Toronto.',25,IVORY)
+    b+=t(658,216,'Some days I build operating systems.',23,MUTED)
+    b+=t(658,253,'Other days I experiment with AI,',23,MUTED)
+    b+=t(658,290,'design interfaces, or take things apart',23,MUTED)
+    b+=t(658,327,'just to understand how they work.',23,MUTED)
+    b+=t(658,366,'SYSTEMS   /   INTELLIGENCE   /   DESIGN',14,GOLD,500,1.4,'mono')
     svg('about.svg',w,h,b)
 
 def section():
-    w,h=1200,146
+    w,h=1200,174
     b=r(0,0,w,h,BG)+header(w,'SELECTED WORK','02')
-    b+=t(36,117,'Ideas, made real.',66,IVORY,800,-2)
-    b+=t(1163,111,'04 / BUILDS',14,GOLD,500,2,'mono','text-anchor="end"')
+    b+=t(36,137,'Ideas, made real.',79,IVORY,800,-2)
+    b+=t(1163,132,'04 / BUILDS',16,GOLD,500,2,'mono','text-anchor="end"')
     svg('projects-heading.svg',w,h,b)
 def art(i):
     if i==0:
@@ -230,24 +230,24 @@ def project_motion(i):
             +'</g>')
 
 def project(i,p):
-    w,h=1200,365
+    w,h=1200,398
     b=r(0,0,w,h,BG)+r(16,8,w-32,h-16,PANEL,LINE,12)
-    b+=t(44,56,p['category'],13,GOLD,600,2,'mono')
-    b+='<g class="reveal" style="animation-delay:.1s">'+t(42,135,p['name'],56,IVORY,800,-2)+'</g>'
-    b+=t(45,186,p['description'],18,MUTED)
-    b+=path('M45 225 H555',LINE,1)+t(45,265,p['stack'],13,CYAN,500,1,'mono')
-    b+=t(45,321,'EXPLORE PROJECT  ↗',15,GOLD,600,1,'mono')
+    b+=t(44,65,p['category'],16,GOLD,600,2,'mono')
+    b+='<g class="reveal" style="animation-delay:.1s">'+t(42,153,p['name'],69,IVORY,800,-2)+'</g>'
+    b+=t(45,213,p['description'],22,MUTED)
+    b+=path('M45 255 H570',LINE,1)+t(45,302,p['stack'],16,CYAN,500,1,'mono')
+    b+=t(45,358,'EXPLORE PROJECT  ↗',17,GOLD,600,1,'mono')
     b+='<defs><clipPath id="artclip"><rect x="645" y="66" width="505" height="270" rx="12"/></clipPath><linearGradient id="shine" x1="0" x2="1"><stop offset="0" stop-color="#19A9D1" stop-opacity="0"/><stop offset=".5" stop-color="#19A9D1" stop-opacity=".16"/><stop offset="1" stop-color="#19A9D1" stop-opacity="0"/></linearGradient></defs>'
-    b+='<g class="art-stage" style="animation-delay:.35s">'+art(i)+'</g>'
+    b+='<g class="art-stage" style="animation-delay:.35s" transform="translate(0 14)">'+art(i)+'</g>'
     b+=project_motion(i)
 
     svg(f'project-{i+1}.svg',w,h,b)
 def footer():
-    w,h=1200,215
+    w,h=1200,240
     b=r(0,0,w,h,BG)+header(w,'OPEN FOR WHAT COMES NEXT','03')
-    b+=t(36,128,'Have something ambitious in mind?',48,IVORY,750,-1)
-    b+=t(40,180,'LET’S BUILD IT.',17,GOLD,600,3,'mono')
-    b+=t(1160,182,'PORTFOLIO  /  GITHUB',14,CYAN,500,1,'mono','text-anchor="end"')
+    b+=t(36,146,'Have something ambitious in mind?',56,IVORY,750,-1)
+    b+=t(40,203,'LET’S BUILD IT.',20,GOLD,600,3,'mono')
+    b+=t(1160,205,'PORTFOLIO  /  GITHUB',16,CYAN,500,1,'mono','text-anchor="end"')
     svg('footer.svg',w,h,b)
 for THEME in ('dark','light'):
     hero();statement();section()
