@@ -1,0 +1,17 @@
+{
+  "username": "titaniumfeather",
+  "name": "Muhammed Adil",
+  "headline": "SOFTWARE ENGINEER  /  AI BUILDER",
+  "subtitle": "Computer Science @ University of Toronto",
+  "portfolio": "http://madilportfolio.vercel.app/",
+  "linkedin": "",
+  "email": "",
+  "theme": {"background": "#0B101B", "panel": "#111C2D", "border": "#283B55", "text": "#F2F6FF", "muted": "#94ABC6", "accent": "#65B8FF"},
+  "projects": [
+    {"name": "LunaraOS", "category": "SYSTEMS", "description": "Custom Ubuntu-based desktop environment and automation", "stack": "Linux · C++ · Python · Bash", "url": ""},
+    {"name": "MedScope Vision", "category": "AI / ML", "description": "Medical imaging intelligence and inference workflows", "stack": "TensorFlow · FastAPI · Docker", "url": ""},
+    {"name": "BeneficentTrade", "category": "FINTECH", "description": "Market indicators, signals and analytical dashboards", "stack": "React · Node.js · Redis", "url": ""},
+    {"name": "PixelPerfect", "category": "FOUNDER", "description": "Web experiences and tools for real-world clients", "stack": "JavaScript · React · WordPress", "url": ""}
+  ],
+  "skills": ["Python", "JavaScript", "C++", "React", "TensorFlow", "Linux", "Docker", "SQL", "FastAPI", "Git"]
+}
