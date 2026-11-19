@@ -16,6 +16,4 @@
 </div>
 
 <p align="center"><a href="http://madilportfolio.vercel.app/">Portfolio</a> · <a href="https://github.com/titaniumfeather">GitHub</a></p>
-#� �t�i�t�a�n�i�u�m�f�e�a�t�h�e�r�
-�
-�
+
