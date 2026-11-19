@@ -1,12 +1,10 @@
-name: Update Titanium OS profile
+name: Render Titanium OS README
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '17 9 * * *'
   push:
     paths:
       - 'config.json'
-      - 'scripts/**'
+      - 'scripts/render_cards.py'
       - '.github/workflows/update-readme.yml'
 permissions:
   contents: write
@@ -15,23 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Fetch GitHub data
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python scripts/fetch_github_data.py
-      - name: Render SVG cards
+      - name: Render SVGs
         run: python scripts/render_cards.py
-      - name: Commit updated artwork
+      - name: Commit generated cards
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add cards/ data/contributions.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cards/
           if ! git diff --cached --quiet; then
-            git commit -m 'chore: refresh Titanium OS profile cards'
+            git commit -m "Refresh Titanium OS SVG artwork"
             git push
           fi
