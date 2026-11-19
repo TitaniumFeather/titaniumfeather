@@ -1,19 +1,27 @@
-# Titanium OS — setup
+# Titanium OS — Minimal Edition
 
-1. Create a **public** GitHub repository named `titaniumfeather` under the GitHub account `titaniumfeather` (the profile README only works when account and repository names match).
-2. Upload **all files**, including the hidden `.github/workflows/update-readme.yml` directory, to the repository root.
-3. In GitHub repository **Settings → Actions → General**, enable workflows and set **Workflow permissions → Read and write permissions** if your organization/account allows it. The workflow uses `GITHUB_TOKEN`, which is provided automatically by GitHub Actions.
-4. Go to **Actions → Update Titanium OS profile → Run workflow**. The workflow fetches real contribution data and commits regenerated SVG cards.
-5. Edit `config.json` to change your name, headline, skills, theme, projects, and project URLs. Edit `README.md` anchor `href` attributes to match your real project URLs. The config's `projects[].url` values are intentionally blank because your repository links have not been verified.
-6. For local rendering, run `python scripts/render_cards.py`. To fetch contributions locally, set `GH_TOKEN` to a GitHub token with access to your own public contribution data, then run `python scripts/fetch_github_data.py` followed by `python scripts/render_cards.py`.
-7. For a static preview, run `STATIC=1 python scripts/render_cards.py`. Run again without `STATIC=1` before committing to restore animations.
+This version intentionally has **no GitHub contribution graphs or API calls**. It is a static, animated portfolio README with project-specific SVG artwork. SVG animation is supported where GitHub's image renderer/browser allows it; reduced-motion settings are respected.
 
-## Notes
+## Install
+1. Create or open `https://github.com/TitaniumFeather/titaniumfeather`.
+2. Clone it locally (`git clone https://github.com/TitaniumFeather/titaniumfeather.git`).
+3. Copy **the contents** of this package into the cloned folder, including `.github/`.
+4. Run `python scripts/render_cards.py` to rebuild the artwork.
+5. Run `git add . && git commit -m "Redesign profile" && git push`.
 
-- All generated SVGs are standalone, require no external fonts, and use CSS animations. `prefers-reduced-motion` disables animations. Some GitHub clients may display a static frame.
-- Contribution data is never fabricated. Before the first successful API refresh, analytics show a helpful unavailable state.
-- `data/contributions.json` is refreshed daily by GitHub Actions. The GitHub GraphQL contribution calendar is based on GitHub's contribution counting rules, not raw commit totals.
-- The ASCII art is an abstract feather, not a personal likeness. To replace it, edit `FEATHER` in `scripts/render_cards.py` or provide a photo for a custom portrait conversion.
-- SVG text is rendered using system fonts for portability. For a bespoke embedded font, use a properly licensed WOFF subset encoded as a data URI; this implementation deliberately has no font redistribution requirement.
-- If GitHub Actions reports a 403 on `git push`, verify workflow write permissions and repository branch protection settings.
-- GitHub's scheduled workflows can be delayed, especially during high-load periods.
+## Customize
+- Edit `config.json` for your name, wording, and project metadata.
+- Update each project `<a href="...">` in `README.md` to its real repo URL; portfolio is the placeholder.
+- Re-run `python scripts/render_cards.py` after editing config.
+- `STATIC=1 python scripts/render_cards.py` creates nonanimated final-state images for previewing.
+- The workflow rerenders cards when config, script or workflow changes and can be run manually from Actions. No scheduled updates are needed.
+
+## Design
+The hero uses a geometric architectural wireframe rather than a face portrait. This is intentional: no personal photo was provided. Palette: near-black, warm ivory, muted gold and cyan.
+
+
+## ASCII portrait
+The hero uses `portrait-source.png` (a stylized portrait derived from your supplied photo). The renderer converts it into actual SVG text characters, with row-by-row entrance animations. To replace it, overwrite `portrait-source.png` with another square portrait and rerun the renderer. Install Pillow first: `python -m pip install Pillow`. The GitHub workflow installs Pillow automatically. `STATIC=1` disables animation for screenshots.
+
+## Motion edition
+The hero now has floating perspective wireframe cubes, an animated ASCII portrait with transparent background, a two-stage large-type reveal, and animated engineering arcs. The four project illustrations retain their custom graphics and gain staggered entrance animations. Motion lives in `scripts/render_cards.py` and can be adjusted in its CSS animation definitions. To see the end state, run `STATIC=1 python scripts/render_cards.py`; rerun without `STATIC=1` before committing to restore animation. The portrait is generated from `portrait-source.png` in the repository root. GitHub image animation support varies by browser; reduced-motion settings disable the effects.
