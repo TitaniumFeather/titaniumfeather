@@ -1,251 +1,116 @@
-"""Generate self-contained, animated SVG cards. No third-party dependencies.
-STATIC=1 renders all elements at their final state for screenshots.
+"""Titanium OS / Minimal. Generates self-contained animated SVGs. Python stdlib only.
+Run: python scripts/render_cards.py ; STATIC=1 python scripts/render_cards.py
+Edit config.json for text, project URLs and identity. No GitHub API required.
 """
-import calendar
-import datetime as dt
-import html
-import json
-import os
-from collections import defaultdict
+import html, json, os
 from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-CFG = json.loads((ROOT / 'config.json').read_text(encoding='utf-8'))
-DATA_PATH = ROOT / 'data' / 'contributions.json'
-DATA = json.loads(DATA_PATH.read_text(encoding='utf-8')) if DATA_PATH.exists() else {}
-OUT = ROOT / 'cards'
-OUT.mkdir(exist_ok=True)
-C = CFG['theme']
-STATIC = os.getenv('STATIC') == '1'
-
-
-def esc(s):
-    return html.escape(str(s), quote=True)
-
-
-def txt(x, y, value, size=18, fill=None, weight=400, family='sans', extra=''):
-    fam = 'ui-monospace, SFMono-Regular, Consolas, monospace' if family == 'mono' else 'Inter, Segoe UI, Arial, sans-serif'
-    return f'<text x="{x}" y="{y}" font-family="{fam}" font-size="{size}" fill="{fill or C["text"]}" font-weight="{weight}" {extra}>{esc(value)}</text>'
-
-
-def rect(x, y, w, h, fill=None, rx=12, stroke=None, extra=''):
-    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill or C["panel"]}" {f"stroke={chr(34)}{stroke}{chr(34)}" if stroke else ""} {extra}/>'
-
-
-def svg(name, width, height, body, css=''):
-    base = '''
-      .enter { animation: rise .75s cubic-bezier(.2,.8,.2,1) both; }
-      .fade { animation: fade .9s ease both; }
-      .pulse { animation: pulse 3s ease-in-out infinite; }
-      .shine { animation: shine 6s linear infinite; }
-      @keyframes rise { from { opacity:0; transform:translateY(17px) } to { opacity:1; transform:translateY(0) } }
-      @keyframes fade { from { opacity:0 } to { opacity:1 } }
-      @keyframes pulse { 0%,100% { opacity:.35 } 50% { opacity:1 } }
-      @keyframes shine { 0%,65% { opacity:.12 } 80% { opacity:.8 } 100% { opacity:.12 } }
-      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none!important; transition:none!important; opacity:1!important; } }
-    '''
-    if STATIC:
-        base += '*, *::before, *::after { animation:none!important; opacity:1!important; }'
-    content = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="{esc(name)}">
-    <style>{base}{css}</style>{body}</svg>'''
-    (OUT / name).write_text(content, encoding='utf-8')
-
-
-def shell(w, h, heading, sub=''):
-    body = rect(1, 1, w-2, h-2, C['background'], 20, C['border'])
-    body += rect(25, 24, 9, 9, '#FF7272', 5) + rect(42, 24, 9, 9, '#F5C76D', 5) + rect(59, 24, 9, 9, '#63D9AC', 5)
-    body += txt(85, 33, heading, 12, C['muted'], 600, 'mono')
-    if sub:
-        body += txt(w-26, 33, sub, 11, C['accent'], 500, 'mono', 'text-anchor="end"')
-    body += f'<path d="M25 50 H{w-25}" stroke="{C["border"]}"/>'
-    return body
-
-
-# A custom ASCII feather, not a depiction of the user's face.
-FEATHER = [
-'                  .',
-'                 /|',
-'                //|',
-'             . ///|',
-'            / ////|',
-'           / /////|',
-'          / //////|',
-'         / ///////|',
-'        / ////////|',
-'       / /////////|',
-'       \\\\\\\\\\\\\\\\\\ |',
-'        \\\\\\\\\\\\\\\\ |',
-'         \\\\\\\\\\\\\\ |',
-'          \\\\\\\\\\\\ |',
-'           \\\\\\\\\\ |',
-'            \\\\\\ |',
-'             \\\\ |',
-'              \\ |',
-'                 |',
-'                 |',
-]
-
-
+R=Path(__file__).resolve().parents[1]
+C=json.loads((R/'config.json').read_text(encoding='utf-8'))
+OUT=R/'cards'; OUT.mkdir(exist_ok=True)
+STATIC=os.environ.get('STATIC')=='1'
+BG='#080A0B'; PANEL='#101415'; IVORY='#F1EEE5'; GOLD='#D7B54A'; CYAN='#19A9D1'; MUTED='#A3A39A'; LINE='#293034'
+def e(s): return html.escape(str(s),quote=True)
+def t(x,y,s,size=18,color=IVORY,weight=400,spacing=0,family='sans',extra=''):
+    fam="'Arial Narrow',Impact,'DejaVu Sans',sans-serif" if family=='sans' else "'DejaVu Sans Mono',Consolas,monospace"
+    return f'<text x="{x}" y="{y}" font-family="{fam}" font-size="{size}" font-weight="{weight}" letter-spacing="{spacing}" fill="{color}" {extra}>{e(s)}</text>'
+def r(x,y,w,h,fill=PANEL,stroke='none',rx=0,extra=''):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" stroke="{stroke}" {extra}/>'
+def path(d,color=CYAN,width=1,extra=''):
+    return f'<path d="{d}" fill="none" stroke="{color}" stroke-width="{width}" {extra}/>'
+def svg(name,w,h,body):
+    css="""<style>
+    .reveal{animation:reveal .85s cubic-bezier(.2,.75,.2,1) both}.draw{stroke-dasharray:900;stroke-dashoffset:900;animation:draw 2.6s ease forwards}.glow{animation:glow 4s ease-in-out infinite}.scan{animation:scan 4s ease-in-out infinite}.float{animation:float 6s ease-in-out infinite}
+    @keyframes reveal{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes draw{to{stroke-dashoffset:0}}@keyframes glow{50%{opacity:.3}}@keyframes scan{0%,100%{transform:translateY(0)}50%{transform:translateY(125px)}}@keyframes float{50%{transform:translateY(-7px)}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;stroke-dashoffset:0!important;opacity:1!important}}
+    """+(' *{animation:none!important;stroke-dashoffset:0!important;opacity:1!important}' if STATIC else '')+'</style>'
+    (OUT/name).write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img" aria-label="{e(name)}">{css}{body}</svg>',encoding='utf-8')
+def grid(w,h,step=42):
+    return ''.join(path(f'M{x} 0 V{h}',LINE,.55, 'opacity=".28"') for x in range(0,w,step))+''.join(path(f'M0 {y} H{w}',LINE,.55,'opacity=".28"') for y in range(0,h,step))
+def header(w,label,num):
+    return t(32,34,'MA  /  TITANIUMFEATHER',13,GOLD,700,2,'mono')+t(w-32,34,f'{label}   /   {num}',12,MUTED,500,1,'mono','text-anchor="end"')+path(f'M32 49 H{w-32}',LINE)
 def hero():
-    w, h = 1100, 440
-    b = shell(w, h, 'titaniumfeather / profile', 'SYSTEM ONLINE')
-    b += rect(32, 70, 670, 330, C['panel'], 16, C['border'])
-    b += txt(58, 107, '01 / INITIALIZING PROFILE', 14, C['accent'], 600, 'mono')
-    b += '<g class="enter" style="animation-delay:.1s">' + txt(58, 180, CFG['name'].upper(), 55, C['text'], 750) + '</g>'
-    b += '<g class="enter" style="animation-delay:.35s">' + txt(58, 223, CFG['headline'], 19, C['accent'], 650, 'mono') + '</g>'
-    b += '<g class="enter" style="animation-delay:.55s">' + txt(58, 263, CFG['subtitle'], 18, C['muted']) + '</g>'
-    b += txt(58, 341, 'BUILDING SYSTEMS  /  SHIPPING PRODUCTS', 15, C['muted'], 500, 'mono')
-    b += txt(58, 371, 'PYTHON    C++    REACT    LINUX    AI/ML', 14, C['accent'], 500, 'mono')
-    b += rect(723, 70, 344, 330, '#0D192B', 16, C['border'])
-    b += txt(747, 101, 'ASCII / FEATHER.SYS', 13, C['muted'], 500, 'mono')
-    for i, line in enumerate(FEATHER):
-        b += f'<g class="fade" style="animation-delay:{.8+i*.075:.3f}s">' + txt(776, 128+i*12.2, line, 12, C['accent'], 400, 'mono', 'xml:space="preserve"') + '</g>'
-    b += txt(747, 377, 'ARTWORK: EDITABLE ASCII', 11, C['muted'], 500, 'mono')
-    svg('hero.svg', w, h, b)
-
-
-def parse_days():
-    out = []
-    for item in DATA.get('days', []):
-        try:
-            out.append((dt.date.fromisoformat(item['date']), max(0, int(item['contributionCount']))))
-        except (ValueError, KeyError, TypeError):
-            continue
-    return sorted(out)
-
-
-def heatmap(days):
-    w, h = 1100, 240
-    b = shell(w, h, 'contribution_matrix / last 365 days', 'LIVE GITHUB DATA' if days else 'AWAITING API DATA')
-    if not days:
-        b += txt(42, 125, 'Contribution calendar unavailable — configure GH_TOKEN in GitHub Actions.', 19, C['muted'])
-    else:
-        by_date = dict(days)
-        end = max(d for d, _ in days)
-        start = end - dt.timedelta(days=364)
-        first = start - dt.timedelta(days=(start.weekday()+1)%7)
-        for i in range(53):
-            for j in range(7):
-                day = first + dt.timedelta(days=i*7+j)
-                if not start <= day <= end:
-                    continue
-                n = by_date.get(day, 0)
-                color = '#1D2D43' if n == 0 else '#234B70' if n <= 2 else '#347CA9' if n <= 5 else '#65B8FF'
-                b += rect(37+i*19.3, 73+j*19.5, 14, 14, color, 3, extra=f'class="fade" style="animation-delay:{i*.014+j*.012:.3f}s"')
-        b += txt(40, 227, 'LESS', 11, C['muted'], 500, 'mono')
-        for i, color in enumerate(['#1D2D43','#234B70','#347CA9','#65B8FF']):
-            b += rect(83+i*18, 216, 12, 12, color, 2)
-        b += txt(162, 227, 'MORE', 11, C['muted'], 500, 'mono')
-    svg('heatmap.svg', w, h, b)
-
-
-def streak(days):
-    if not days:
-        return 0
-    counts = dict(days)
-    d = max(counts)
-    if counts.get(d, 0) == 0:
-        d -= dt.timedelta(days=1)
-    n = 0
-    while counts.get(d, 0) > 0:
-        n += 1
-        d -= dt.timedelta(days=1)
-    return n
-
-
-def activity(days):
-    w, h = 1100, 370
-    b = shell(w, h, 'activity_analytics / contribution overview', 'ROLLING YEAR')
-    if not days:
-        b += txt(42, 150, 'Verified contribution statistics will appear after the first data refresh.', 19, C['muted'])
-        svg('activity.svg', w, h, b)
-        return
-    total = DATA.get('total')
-    if total is None:
-        total = sum(n for _, n in days)
-    active = sum(1 for _, n in days if n > 0)
-    current_streak = streak(days)
-    busiest = max(days, key=lambda pair: pair[1])
-    stats = [('CONTRIBUTIONS', str(total)), ('ACTIVE DAYS', str(active)), ('CURRENT STREAK', f'{current_streak}d'), ('BUSIEST DAY', str(busiest[1]))]
-    for i, (label, value) in enumerate(stats):
-        x = 30+i*268
-        b += rect(x, 70, 244, 92, C['panel'], 12, C['border'])
-        b += txt(x+17, 99, label, 12, C['muted'], 500, 'mono')
-        b += txt(x+17, 142, value, 34, C['text'], 750)
-    months = defaultdict(int)
-    for d, n in days:
-        months[(d.year, d.month)] += n
-    end = max(d for d, _ in days)
-    keys = []
-    for offset in range(11, -1, -1):
-        y = end.year
-        m = end.month-offset
-        while m <= 0:
-            m += 12
-            y -= 1
-        keys.append((y, m))
-    values = [months[k] for k in keys]
-    maximum = max(values) or 1
-    b += txt(36, 198, 'MONTHLY CONTRIBUTIONS', 13, C['muted'], 600, 'mono')
-    for i, ((year, month), value) in enumerate(zip(keys, values)):
-        x = 45+i*86
-        height = max(2, 105*value/maximum) if value else 2
-        b += rect(x, 315-height, 51, height, C['accent'] if value == maximum else '#31658F', 5, extra=f'class="fade" style="animation-delay:{.25+i*.075:.2f}s"')
-        b += txt(x+25, 337, calendar.month_abbr[month].upper(), 12, C['muted'], 500, 'mono', 'text-anchor="middle"')
-        b += txt(x+25, 306-height, str(value), 12, C['text'], 500, 'mono', 'text-anchor="middle"')
-    svg('activity.svg', w, h, b)
-
-
-def specialties():
-    items = [('systems.svg', '01 / SYSTEMS', 'ENGINEER', 'Linux · Automation · C++', 'Architecture and low-level tooling'),
-             ('intelligence.svg', '02 / INTELLIGENCE', 'AI / ML', 'Models · Inference · APIs', 'Intelligent products and workflows'),
-             ('products.svg', '03 / PRODUCTS', 'BUILDER', 'React · Backend · UX', 'From prototype to production')]
-    for filename, kicker, title, stack, desc in items:
-        w, h = 360, 215
-        b = rect(1, 1, w-2, h-2, C['panel'], 17, C['border'])
-        b += rect(24, 24, 37, 4, C['accent'], 2)
-        b += txt(24, 58, kicker, 13, C['accent'], 600, 'mono')
-        b += '<g class="enter" style="animation-delay:.3s">' + txt(24, 107, title, 32, C['text'], 750) + '</g>'
-        b += txt(24, 151, stack, 15, C['muted'])
-        b += txt(24, 185, desc, 13, C['muted'])
-        b += f'<circle cx="326" cy="37" r="13" fill="none" stroke="{C["accent"]}" stroke-width="2" class="pulse"/>'
-        svg(filename, w, h, b)
-
-
-def projects():
-    for i, project in enumerate(CFG['projects']):
-        w, h = 530, 180
-        b = rect(1, 1, w-2, h-2, C['panel'], 16, C['border'])
-        b += txt(25, 38, f'{i+1:02d} / {project["category"]}', 13, C['accent'], 650, 'mono')
-        b += '<g class="enter" style="animation-delay:.2s">' + txt(25, 83, project['name'], 29, C['text'], 700) + '</g>'
-        b += txt(25, 117, project['description'][:64], 14, C['muted'])
-        b += txt(25, 153, project['stack'], 13, C['accent'], 400, 'mono')
-        b += txt(497, 45, '↗', 25, C['accent'], 500, extra='text-anchor="end"')
-        svg(f'project-{i+1}.svg', w, h, b)
-
-
-def tech():
-    w, h = 1100, 180
-    b = shell(w, h, 'technology_stack / tools of choice')
-    for i, name in enumerate(CFG['skills'][:10]):
-        x = 31+(i%5)*213
-        y = 70+(i//5)*49
-        b += rect(x, y, 196, 38, C['panel'], 9, C['border'])
-        b += txt(x+15, y+25, name, 16, C['text'], 550, 'mono')
-        b += rect(x+179, y+14, 8, 8, C['accent'], 4, extra='class="pulse"')
-    svg('tech-stack.svg', w, h, b)
-
-
-def main():
-    days = parse_days() if DATA.get('available') else []
-    hero()
-    heatmap(days)
-    activity(days)
-    specialties()
-    projects()
-    tech()
-    print(f'Rendered {len(list(OUT.glob("*.svg")))} SVG cards (STATIC={STATIC})')
-
-
-if __name__ == '__main__':
-    main()
+    w,h=1200,455
+    b=r(0,0,w,h,BG)+grid(w,h,58)+header(w,'PORTFOLIO 2026','00')
+    b+=t(40,100,'SOFTWARE ENGINEER  ·  CREATIVE BUILDER',15,GOLD,500,3,'mono')
+    name=C['name'].upper().split()
+    b+='<g class="reveal" style="animation-delay:.12s">'+t(32,225,name[0],137,IVORY,900,-6)+'</g>'
+    b+='<g class="reveal" style="animation-delay:.28s">'+t(32,355,' '.join(name[1:]),149,IVORY,900,-7)+'</g>'
+    b+=t(40,410,'BUILDING WITH PRECISION. PROGRAMMING WITH PURPOSE.',16,MUTED,400,2,'mono')
+    # abstract architectural wireframe, right side
+    b+=path('M880 96 L1010 68 L1143 126 L1013 158 Z',CYAN,1.4,'class="draw" opacity=".8"')
+    b+=path('M880 96 V300 L1013 366 V158 M1013 366 L1143 306 V126 M880 300 L1010 273 L1143 306',CYAN,1.4,'class="draw" opacity=".65"')
+    b+=path('M925 127 L1058 98 V307 L925 333 Z',GOLD,1.4,'class="draw" opacity=".7"')
+    b+=path('M1058 98 L1098 115 V323 L1058 307 M925 333 L965 349 L1098 323',GOLD,1.1,'class="draw" opacity=".55"')
+    for x,y in [(876,95),(1013,158),(1143,126),(1013,366),(925,333)]:b+=f'<circle cx="{x}" cy="{y}" r="3" fill="{GOLD}"/>'
+    b+=t(893,393,'FIG. 01  /  STRUCTURE IN MOTION',10,CYAN,400,1,'mono')
+    svg('hero.svg',w,h,b)
+def statement():
+    w,h=1200,270
+    b=r(0,0,w,h,BG)+header(w,'THE PERSON BEHIND THE CODE','01')
+    b+=t(40,115,'Curiosity is the',63,IVORY,700,-2)
+    b+=t(40,190,'whole point.',78,GOLD,800,-3)
+    b+=path('M655 83 V216',LINE,1)
+    b+=t(690,105,'I study computer science at the University of Toronto.',20,IVORY)
+    b+=t(690,145,'I like building at the intersection of systems,',20,MUTED)
+    b+=t(690,180,'intelligence, and things people actually use.',20,MUTED)
+    b+=t(690,226,'LESS TALK. MORE THINGS THAT WORK.',12,CYAN,500,2,'mono')
+    svg('about.svg',w,h,b)
+def section():
+    w,h=1200,146
+    b=r(0,0,w,h,BG)+header(w,'SELECTED WORK','02')
+    b+=t(36,117,'Ideas, made real.',66,IVORY,800,-2)
+    b+=t(1163,111,'04 / BUILDS',14,GOLD,500,2,'mono','text-anchor="end"')
+    svg('projects-heading.svg',w,h,b)
+def art(i):
+    if i==0:
+        a=r(650,83,475,228,'#0B1519',CYAN,10)+r(666,103,443,29,'#15242B',rx=4)
+        a+= ''.join(f'<circle cx="{x}" cy="117" r="4" fill="{c}"/>' for x,c in [(685,GOLD),(699,CYAN),(713,MUTED)])
+        a+=r(666,146,105,150,'#10232B',rx=4)+r(784,146,325,150,'#11191B',rx=4)
+        a+=t(803,176,'lunara / workspace',13,CYAN,500,0,'mono')
+        for k in range(3):a+=r(806+k*93,196,77,72,'#18323B',CYAN if k==1 else LINE,4)
+        a+=path('M841 196 V268 M806 231 H883',GOLD,1.5,'class="draw"')
+        return a
+    if i==1:
+        a=r(704,68,338,255,'#0C171B',CYAN,14)+r(724,87,298,216,'#111C20',LINE,7)
+        # schematic scan cross section
+        for rad in [100,80,61,40]:a+=f'<ellipse cx="873" cy="196" rx="{rad}" ry="{rad*.85}" fill="none" stroke="{CYAN if rad%2==0 else GOLD}" stroke-width="1.3" opacity=".55"/>'
+        a+=path('M873 110 V283 M762 196 H985',CYAN,1,'opacity=".6"')
+        a+=path('M804 173 Q834 133 861 170 T931 160 Q967 192 927 232 T853 246 Q801 236 804 173',GOLD,2,'class="draw"')
+        a+=r(724,125,298,2,CYAN,rx=1,extra='class="scan" opacity=".8"')
+        a+=t(1065,113,'SCAN / 002',12,CYAN,400,1,'mono')
+        return a
+    if i==2:
+        a=r(650,78,485,240,'#0C171B',LINE,9)
+        for yy in range(116,293,40):a+=path(f'M674 {yy} H1111',LINE,.8)
+        for xx in range(685,1111,55):a+=path(f'M{xx} 100 V293',LINE,.8)
+        a+=path('M679 264 L723 250 L755 259 L789 201 L823 222 L858 184 L892 202 L930 135 L964 160 L1003 122 L1044 145 L1100 109',CYAN,3,'class="draw"')
+        a+=path('M679 278 L723 272 L755 267 L789 249 L823 256 L858 236 L892 231 L930 215 L964 224 L1003 203 L1044 211 L1100 188',GOLD,1.7,'class="draw" opacity=".75"')
+        a+=t(688,105,'SIGNAL / MARKET STRUCTURE',12,GOLD,400,1,'mono')
+        return a
+    a=r(670,74,445,245,'#0C171B',CYAN,9)+r(670,74,445,29,'#16272C',rx=9)
+    a+=''.join(f'<circle cx="{x}" cy="89" r="4" fill="{c}"/>' for x,c in [(690,GOLD),(705,CYAN),(720,MUTED)])
+    a+=r(690,120,405,83,'#17282C',rx=4)+r(707,141,186,12,IVORY,rx=3)+r(707,162,125,8,GOLD,rx=3)
+    a+=r(690,218,122,81,'#12252C',rx=4)+r(823,218,122,81,'#172F37',rx=4)+r(956,218,139,81,'#12252C',rx=4)
+    a+=path('M977 261 L1003 237 L1029 261 L1052 245 L1080 261',CYAN,2,'class="draw"')
+    return a
+def project(i,p):
+    w,h=1200,365
+    b=r(0,0,w,h,BG)+r(16,8,w-32,h-16,PANEL,LINE,12)
+    b+=t(44,56,p['category'],13,GOLD,600,2,'mono')
+    b+='<g class="reveal" style="animation-delay:.1s">'+t(42,135,p['name'],56,IVORY,800,-2)+'</g>'
+    b+=t(45,186,p['description'],18,MUTED)
+    b+=path('M45 225 H555',LINE,1)+t(45,265,p['stack'],13,CYAN,500,1,'mono')
+    b+=t(45,321,'EXPLORE PROJECT  ↗',15,GOLD,600,1,'mono')
+    b+=art(i)
+    svg(f'project-{i+1}.svg',w,h,b)
+def footer():
+    w,h=1200,215
+    b=r(0,0,w,h,BG)+header(w,'OPEN FOR WHAT COMES NEXT','03')
+    b+=t(36,128,'Have something ambitious in mind?',48,IVORY,750,-1)
+    b+=t(40,180,'LET’S BUILD IT.',17,GOLD,600,3,'mono')
+    b+=t(1160,182,'PORTFOLIO  /  GITHUB',14,CYAN,500,1,'mono','text-anchor="end"')
+    svg('footer.svg',w,h,b)
+hero();statement();section()
+for i,p in enumerate(C['projects']):project(i,p)
+footer()
+print('Generated 8 SVGs in cards/')
