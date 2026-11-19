@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="530" height="180" viewBox="0 0 530 180" role="img" aria-label="project-4.svg">
+    <style>
+      .enter { animation: rise .75s cubic-bezier(.2,.8,.2,1) both; }
+      .fade { animation: fade .9s ease both; }
+      .pulse { animation: pulse 3s ease-in-out infinite; }
+      .shine { animation: shine 6s linear infinite; }
+      @keyframes rise { from { opacity:0; transform:translateY(17px) } to { opacity:1; transform:translateY(0) } }
+      @keyframes fade { from { opacity:0 } to { opacity:1 } }
+      @keyframes pulse { 0%,100% { opacity:.35 } 50% { opacity:1 } }
+      @keyframes shine { 0%,65% { opacity:.12 } 80% { opacity:.8 } 100% { opacity:.12 } }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none!important; transition:none!important; opacity:1!important; } }
+    </style><rect x="1" y="1" width="528" height="178" rx="16" fill="#111C2D" stroke="#283B55" /><text x="25" y="38" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="13" fill="#65B8FF" font-weight="650" >04 / FOUNDER</text><g class="enter" style="animation-delay:.2s"><text x="25" y="83" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="29" fill="#F2F6FF" font-weight="700" >PixelPerfect</text></g><text x="25" y="117" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" fill="#94ABC6" font-weight="400" >Web experiences and tools for real-world clients</text><text x="25" y="153" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="13" fill="#65B8FF" font-weight="400" >JavaScript · React · WordPress</text><text x="497" y="45" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="25" fill="#65B8FF" font-weight="500" text-anchor="end">↗</text></svg>
