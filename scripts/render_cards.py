@@ -2,7 +2,7 @@
 Run: python scripts/render_cards.py ; STATIC=1 python scripts/render_cards.py
 Edit config.json for text, project URLs and identity. No GitHub API required.
 """
-import html, json, os
+import html, json, os, base64, io
 from PIL import Image, ImageOps, ImageEnhance
 from pathlib import Path
 R=Path(__file__).resolve().parents[1]
@@ -20,7 +20,7 @@ def path(d,color=CYAN,width=1,extra=''):
     return f'<path d="{d}" fill="none" stroke="{color}" stroke-width="{width}" {extra}/>'
 def svg(name,w,h,body):
     css="""<style>
-    .ascii-pixel{opacity:0;animation:pixel-in .45s steps(2,end) both}
+    .portrait-appear{animation:portrait-enter 1.6s ease-out both}.ascii-pixel{opacity:0;animation:pixel-in .45s steps(2,end) both}
     .hero-name{animation:name-rise 1.25s cubic-bezier(.16,1,.3,1) both}
     .reveal{animation:reveal 1.05s cubic-bezier(.2,.75,.2,1) both}
     .draw{stroke-dasharray:1000;stroke-dashoffset:1000;animation:draw 3.2s cubic-bezier(.3,.6,.3,1) forwards}
@@ -28,6 +28,7 @@ def svg(name,w,h,body):
     .cube{transform-box:fill-box;transform-origin:center;animation:cube-float 8s ease-in-out infinite alternate}
     .glow{animation:glow 4s ease-in-out infinite}.scan{animation:scan 4s ease-in-out infinite}.float{animation:float 6s ease-in-out infinite}
     .pulse{transform-box:fill-box;transform-origin:center;animation:pulse 3s ease-in-out infinite}
+    @keyframes portrait-enter{from{opacity:0;filter:brightness(2)}to{opacity:.92;filter:brightness(1)}}
     @keyframes pixel-in{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
     @keyframes name-rise{from{opacity:0;transform:translateY(115px) skewY(3deg)}to{opacity:1;transform:translateY(0) skewY(0)}}
     @keyframes reveal{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
@@ -43,26 +44,39 @@ def grid(w,h,step=42):
 def header(w,label,num):
     return t(32,34,'MA  /  TITANIUMFEATHER',13,GOLD,700,2,'mono')+t(w-32,34,f'{label}   /   {num}',12,MUTED,500,1,'mono','text-anchor="end"')+path(f'M32 49 H{w-32}',LINE)
 def ascii_portrait():
-    """Portrait as transparent ASCII glyphs: black pixels stay transparent."""
-    im=Image.open(R/'portrait-source.png').convert('RGB')
-    im=im.crop((175,45,1060,1070))
-    cols,rows=55,52
-    im=im.resize((cols,rows),Image.Resampling.LANCZOS)
-    palette=' .:-=+*#%@'
-    out=[]
-    for y in range(rows):
-        for x in range(cols):
-            rr,gg,bb=im.getpixel((x,y))
-            lum=(rr*0.299+gg*0.587+bb*0.114)
-            # Remove the black background and most faint outlines.
-            if lum<35: continue
-            index=max(1,min(9,int(lum/255*9)))
-            char=palette[index]
-            col=GOLD if rr>gg*1.25 and rr>bb*1.4 else IVORY
-            op=min(.95,max(.30,(lum-25)/160))
-            delay=.85+y*.028+x*.001
-            out.append(f'<text x="{x*7.1:.1f}" y="{(y+1)*7.0:.1f}" font-family="DejaVu Sans Mono,monospace" font-size="9.0" fill="{col}" opacity="{op:.2f}" class="ascii-pixel" style="animation-delay:{delay:.3f}s">{e(char)}</text>')
-    return ''.join(out)
+    """Crisp transparent portrait base + animated ASCII ink texture.
+
+    Embedded PNG is self-contained in the SVG, so GitHub needs no external assets.
+    Adjust portrait alpha/scale here; the photo is not placed in a rectangular card.
+    """
+    im = Image.open(R/'portrait-source.png').convert('RGBA')
+    # Crop to head and shoulders, keeping the hair and jaw intact.
+    w,h=im.size
+    im=im.crop((int(w*.10),int(h*.015),int(w*.94),int(h*.91)))
+    im.thumbnail((420,425),Image.Resampling.LANCZOS)
+    pixels=im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            rr,gg,bb,_=pixels[x,y]
+            brightness=max(rr,gg,bb)
+            # Remove the almost-black backdrop gradually, preserve dark hair details.
+            alpha=max(0,min(255,int((brightness-12)*5)))
+            pixels[x,y]=(rr,gg,bb,alpha)
+    out=io.BytesIO();im.save(out,format='PNG',optimize=True)
+    data=base64.b64encode(out.getvalue()).decode('ascii')
+    # Keep the face legible even at 350px GitHub preview width.
+    base=f'<image x="0" y="0" width="360" height="405" preserveAspectRatio="xMidYMid meet" href="data:image/png;base64,{data}" opacity=".92" class="portrait-appear"/>'
+    # Lightweight glyph texture at the edges rather than solid blocks over the face.
+    gray=ImageOps.grayscale(im).resize((43,45),Image.Resampling.LANCZOS)
+    chars=' .·:+*#@'
+    marks=[]
+    for y in range(45):
+        for x in range(43):
+            val=gray.getpixel((x,y))
+            if val<65 or val>215 or (x+y)%3:continue
+            char=chars[min(len(chars)-1,int(val/256*len(chars)))]
+            marks.append(f'<text x="{x*8.0+7:.1f}" y="{y*8.3+13:.1f}" fill="{GOLD if (x+y)%4==0 else IVORY}" font-family="monospace" font-size="8" opacity=".38" class="ascii-pixel" style="animation-delay:{.75+y*.023:.3f}s">{e(char)}</text>')
+    return base+''.join(marks)
 
 def cube(cx,cy,size,color,delay):
     """Three wireframe faces, separately animated with a slow perspective drift."""
@@ -84,22 +98,27 @@ def hero():
     b+=t(40,449,'BUILDING WITH PRECISION.',18,MUTED,400,2,'mono')
     b+=t(40,478,'PROGRAMMING WITH PURPOSE.',18,MUTED,400,2,'mono')
     # Portrait is floating transparent ASCII, not a rectangular block.
-    b+=f'<g transform="translate(787 87)">{ascii_portrait()}</g>'
+    b+=f'<g transform="translate(790 73)">{ascii_portrait()}</g>'
     b+=path('M766 70 H792 M766 70 V98 M1173 70 H1145 M1173 70 V98 M766 485 H792 M766 485 V456 M1173 485 H1145 M1173 485 V456',CYAN,1.3,'opacity=".85"')
     b+=t(787,503,'FIG. 01 / HUMAN, NOT MACHINE',11,CYAN,500,1,'mono')
     b+='<circle cx="1144" cy="87" r="3" fill="'+GOLD+'" class="pulse"/>'
     svg('hero.svg',w,h,b)
 def statement():
-    w,h=1200,270
-    b=r(0,0,w,h,BG)+header(w,'THE PERSON BEHIND THE CODE','01')
-    b+=t(40,115,'Curiosity is the',63,IVORY,700,-2)
-    b+=t(40,190,'whole point.',78,GOLD,800,-3)
-    b+=path('M655 83 V216',LINE,1)
-    b+=t(690,105,'I study computer science at the University of Toronto.',20,IVORY)
-    b+=t(690,145,'I like building at the intersection of systems,',20,MUTED)
-    b+=t(690,180,'intelligence, and things people actually use.',20,MUTED)
-    b+=t(690,226,'LESS TALK. MORE THINGS THAT WORK.',12,CYAN,500,2,'mono')
+    w,h=1200,365
+    b=r(0,0,w,h,BG)+header(w,'THE HUMAN ELEMENT','01')
+    b+=t(40,120,'A little bit of',65,IVORY,800,-2)
+    b+=t(40,201,'everything.',85,GOLD,800,-3)
+    b+=t(43,273,'ALWAYS CURIOUS. ALWAYS BUILDING.',15,CYAN,600,1.5,'mono')
+    b+=path('M645 83 V320',LINE,1)
+    b+=t(680,111,"I'm Muhammed, a Computer Science student",21,IVORY)
+    b+=t(680,143,'at the University of Toronto.',21,IVORY)
+    b+=t(680,193,'Some days I build operating systems.',20,MUTED)
+    b+=t(680,225,'Other days I experiment with AI,',20,MUTED)
+    b+=t(680,257,'design interfaces, or take things apart',20,MUTED)
+    b+=t(680,289,'just to understand how they work.',20,MUTED)
+    b+=t(680,332,'SYSTEMS   /   INTELLIGENCE   /   DESIGN',12,GOLD,500,1.4,'mono')
     svg('about.svg',w,h,b)
+
 def section():
     w,h=1200,146
     b=r(0,0,w,h,BG)+header(w,'SELECTED WORK','02')
