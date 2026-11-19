@@ -230,18 +230,42 @@ def project_motion(i):
             +'</g>')
 
 def project(i,p):
-    w,h=1200,398
-    b=r(0,0,w,h,BG)+r(16,8,w-32,h-16,PANEL,LINE,12)
-    b+=t(44,65,p['category'],16,GOLD,600,2,'mono')
-    b+='<g class="reveal" style="animation-delay:.1s">'+t(42,153,p['name'],69,IVORY,800,-2)+'</g>'
-    b+=t(45,213,p['description'],22,MUTED)
-    b+=path('M45 255 H570',LINE,1)+t(45,302,p['stack'],16,CYAN,500,1,'mono')
-    b+=t(45,358,'EXPLORE PROJECT  ↗',17,GOLD,600,1,'mono')
-    b+='<defs><clipPath id="artclip"><rect x="645" y="66" width="505" height="270" rx="12"/></clipPath><linearGradient id="shine" x1="0" x2="1"><stop offset="0" stop-color="#19A9D1" stop-opacity="0"/><stop offset=".5" stop-color="#19A9D1" stop-opacity=".16"/><stop offset="1" stop-color="#19A9D1" stop-opacity="0"/></linearGradient></defs>'
-    b+='<g class="art-stage" style="animation-delay:.35s" transform="translate(0 14)">'+art(i)+'</g>'
-    b+=project_motion(i)
-
+    # Editorial rhythm: alternating art placement, different scale, accents and
+    # generous transparent gutters INSIDE each image (GitHub strips CSS margins).
+    w,h=1200,535
+    b=r(0,0,w,h,BG)
+    b+='<g transform="translate(0 64)">'
+    left_art=i in (1,3)
+    tx=642 if left_art else 44
+    ax=-570 if left_art else 0
+    # Every piece has a distinct section identity, not the same repeated card.
+    accent=[CYAN,GOLD,CYAN,GOLD][i]
+    b+=path(f'M{tx} 56 H{tx+75}',accent,3)
+    b+=t(tx,96,p['category'],17,GOLD,700,2,'mono')
+    b+=t(tx,180,p['name'],60 if i==1 else 70,IVORY,800,-2)
+    b+=t(tx+2,239,p['description'],19 if i in (0,3) else 20,MUTED)
+    b+=path(f'M{tx} 277 H{tx+510}',LINE,1)
+    b+=t(tx,319,p['stack'],17,CYAN,600,.5,'mono')
+    b+=t(tx,372,'EXPLORE PROJECT  ↗',17,GOLD,700,1,'mono')
+    b+=t(1160 if not left_art else 43,34,f'0{i+1} / 04',16,MUTED,500,1,'mono', 'text-anchor="end"' if not left_art else '')
+    b+='<defs><clipPath id="artclip"><rect x="645" y="58" width="510" height="285" rx="12"/></clipPath><linearGradient id="shine" x1="0" x2="1"><stop offset="0" stop-color="#19A9D1" stop-opacity="0"/><stop offset=".5" stop-color="#19A9D1" stop-opacity=".16"/><stop offset="1" stop-color="#19A9D1" stop-opacity="0"/></linearGradient></defs>'
+    art_group='<g class="art-stage" style="animation-delay:.35s">'+art(i)+project_motion(i)+'</g>'
+    if left_art:
+        # Move the entire illustration (including clip paths and motion) to left.
+        art_group='<g transform="translate(-590 0)">'+art_group+'</g>'
+    b+=art_group
+    # Project-specific editorial accents and asymmetric baselines.
+    if i==0:
+        b+=path('M44 405 H1160',LINE,1,'opacity=".5"')+t(1110,397,'DESKTOP / 01',13,CYAN,500,1,'mono','text-anchor="end"')
+    elif i==1:
+        b+=path('M40 56 V396',GOLD,2,'opacity=".65"')+t(650,398,'RESEARCH / 02',13,GOLD,500,1,'mono')
+    elif i==2:
+        b+=path('M44 404 H580',CYAN,2,'opacity=".45"')+t(1060,402,'LIVE SIGNAL / 03',13,CYAN,500,1,'mono')
+    else:
+        b+=path('M645 401 H1160',GOLD,2,'opacity=".45"')+t(43,403,'BUILT FOR PEOPLE / 04',13,GOLD,500,1,'mono')
+    b+='</g>'
     svg(f'project-{i+1}.svg',w,h,b)
+
 def footer():
     w,h=1200,240
     b=r(0,0,w,h,BG)+header(w,'OPEN FOR WHAT COMES NEXT','03')
